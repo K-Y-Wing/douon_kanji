@@ -1,0 +1,425 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>同音漢字クイズ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700&display=swap">
+<style>
+/* Layout: kanji practice notebook. One column, a cross-ruled square for the target kanji, very large stacked answer buttons. */
+:root {
+  --bg: #edf2f5;
+  --surface: #ffffff;
+  --ink: #121c26;
+  --muted: #465766;
+  --line: #b9c7d2;
+  --edge: #5f7384;
+  --accent: #1b4b91;
+  --accent-ink: #ffffff;
+  --good: #14683a;
+  --good-bg: #ddf3e4;
+  --bad: #a8201a;
+  --bad-bg: #fbe1de;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e161d; --surface: #17232d; --ink: #eef3f7; --muted: #a9b9c6; --line: #3a4b59; --edge: #8196a6;
+    --accent: #8fb8f5; --accent-ink: #0a1a2e; --good: #6fd39a; --good-bg: #123524; --bad: #ff9a92; --bad-bg: #3a1714;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e161d; --surface: #17232d; --ink: #eef3f7; --muted: #a9b9c6; --line: #3a4b59; --edge: #8196a6;
+  --accent: #8fb8f5; --accent-ink: #0a1a2e; --good: #6fd39a; --good-bg: #123524; --bad: #ff9a92; --bad-bg: #3a1714;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 22px;
+  line-height: 1.6;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 4px solid var(--accent); outline-offset: 3px; }
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+[hidden] { display: none !important; }
+
+/* cross-ruled practice square */
+.cell {
+  --s: 68px;
+  position: relative; display: grid; place-items: center; flex: none;
+  width: var(--s); height: var(--s);
+  border: 3px solid var(--ink); background: var(--surface);
+  font-family: var(--f-display); font-weight: 700; font-size: calc(var(--s) * .66); line-height: 1;
+}
+.cell::before, .cell::after { content: ""; position: absolute; pointer-events: none; }
+.cell::before { left: 50%; top: 0; bottom: 0; border-left: 2px dashed var(--line); }
+.cell::after { top: 50%; left: 0; right: 0; border-top: 2px dashed var(--line); }
+.cell b { position: relative; z-index: 1; font-weight: 700; }
+
+/* start */
+.title { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+.cells { display: flex; gap: 6px; }
+.title .quiz { font-family: var(--f-display); font-size: 44px; font-weight: 700; line-height: 1.2; }
+.lead { margin: 0; font-size: 24px; }
+.levels { display: flex; flex-direction: column; gap: 16px; }
+.level {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px;
+  width: 100%; min-height: 120px; padding: 16px 22px;
+  background: var(--surface); color: var(--ink);
+  border: 3px solid var(--accent); border-radius: 18px; text-align: left;
+}
+.level:active, .opt:active, .primary:active, .secondary:active { transform: scale(.985); }
+.lv-head { display: flex; align-items: baseline; gap: 14px; }
+.lv-name { font-family: var(--f-display); font-size: 52px; font-weight: 700; line-height: 1.1; }
+.lv-stars { color: var(--accent); font-size: 28px; letter-spacing: .08em; }
+.lv-best { font-size: 22px; color: var(--muted); white-space: nowrap; }
+.lv-desc { grid-column: 1 / -1; font-size: 22px; color: var(--muted); }
+.howto { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.howto h2 { margin: 0; font-size: 24px; }
+.howto p { margin: 0; font-size: 21px; }
+.howto strong { color: var(--accent); }
+
+/* quiz */
+.topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.ghost { min-height: 60px; padding: 8px 20px; font-size: 24px; font-weight: 700; background: var(--surface); color: var(--ink); border: 3px solid var(--edge); border-radius: 14px; }
+.count { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bar { height: 16px; border: 2px solid var(--edge); border-radius: 999px; background: var(--surface); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+.card { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.card:focus { outline: none; }
+.chip { align-self: flex-start; border: 2px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 2px 16px; font-size: 21px; font-weight: 700; }
+.instr { margin: 0; font-size: 25px; line-height: 1.6; }
+.stim { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+.kbox { --s: 168px; }
+.yomi { display: flex; flex-direction: column; gap: 2px; }
+.yomi small { font-size: 22px; color: var(--muted); }
+.yomi span { font-family: var(--f-display); font-size: 60px; font-weight: 700; line-height: 1.15; }
+.sentence { margin: 0; font-size: 34px; line-height: 1.8; }
+.blank { display: inline-block; padding: 0 12px; margin: 0 4px; border: 3px solid var(--accent); border-radius: 10px; color: var(--accent); font-weight: 700; background: var(--bg); }
+
+.opts { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 600px) { .opts { grid-template-columns: 1fr 1fr; } }
+.opt {
+  position: relative; min-height: 100px; padding: 14px 70px 14px 22px;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; gap: 2px;
+  background: var(--surface); color: var(--ink);
+  border: 3px solid var(--edge); border-radius: 16px; min-width: 0;
+}
+.opt .w { font-size: clamp(34px, 9.5vw, 48px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.opt .w u { text-decoration-line: underline; text-decoration-thickness: 5px; text-underline-offset: 7px; text-decoration-color: var(--accent); }
+.opt .h { font-size: 21px; line-height: 1.45; color: var(--muted); }
+.opt .k { display: none; font-family: var(--f-display); font-size: 42px; font-weight: 700; line-height: 1.25; }
+.opt .k b { color: var(--accent); font-weight: 700; }
+.opt .mark { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 46px; font-weight: 700; line-height: 1; }
+.done .opt { cursor: default; }
+.done .opt .k { display: block; }
+.opt.good { border-color: var(--good); background: var(--good-bg); }
+.opt.good .mark { color: var(--good); }
+.opt.good .mark::before { content: "○"; }
+.opt.bad { border-color: var(--bad); background: var(--bad-bg); }
+.opt.bad .mark { color: var(--bad); }
+.opt.bad .mark::before { content: "×"; }
+
+.fb { border: 3px solid; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+.fb.good { border-color: var(--good); background: var(--good-bg); }
+.fb.bad { border-color: var(--bad); background: var(--bad-bg); }
+.verdict { font-size: 36px; font-weight: 700; line-height: 1.3; }
+.fb.good .verdict { color: var(--good); }
+.fb.bad .verdict { color: var(--bad); }
+.why { margin: 0; font-size: 23px; }
+.primary, .secondary { width: 100%; min-height: 88px; padding: 12px 20px; font-size: 36px; font-weight: 700; border-radius: 16px; border: 3px solid var(--accent); }
+.primary { background: var(--accent); color: var(--accent-ink); }
+.secondary { background: var(--surface); color: var(--accent); }
+.fb .primary { margin-top: 10px; }
+
+/* result */
+.result { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 12px; }
+.result h2 { margin: 0; font-family: var(--f-display); font-size: 40px; }
+.scorebox { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px; font-size: 28px; }
+.scorebox .big { font-family: var(--f-display); font-size: 110px; font-weight: 700; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rmsg { margin: 0; font-size: 28px; font-weight: 700; }
+.miss h3 { margin: 6px 0 8px; font-size: 24px; }
+.miss ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.miss li { border-top: 2px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 0; }
+.miss .lab { font-size: 21px; color: var(--muted); }
+.miss .ans { font-size: 36px; font-weight: 700; line-height: 1.3; }
+.miss .ans small { font-size: 22px; font-weight: 400; color: var(--muted); margin-left: 8px; }
+.actions { display: flex; flex-direction: column; gap: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+  .level:active, .opt:active, .primary:active, .secondary:active { transform: none; }
+}
+</style>
+
+<div class="wrap">
+  <section id="s-start" class="wrap" aria-labelledby="ttl">
+    <h1 class="title" id="ttl" aria-label="同音漢字クイズ">
+      <span class="cells" aria-hidden="true"><span class="cell"><b>同</b></span><span class="cell"><b>音</b></span><span class="cell"><b>漢</b></span><span class="cell"><b>字</b></span></span>
+      <span class="quiz" aria-hidden="true">クイズ</span>
+    </h1>
+    <p class="lead">言葉はひらがなで出ます。頭の中で漢字に直して、答えをえらびましょう。</p>
+    <div id="levels" class="levels"></div>
+    <div class="howto">
+      <h2>あそびかた（1回8問）</h2>
+      <p><strong>同じ漢字をさがす</strong>　大きく出た漢字を使う言葉を、ひらがなの中から1つえらびます。</p>
+      <p><strong>ちがう漢字をさがす</strong>　下線の部分を漢字にして、1つだけちがうものをえらびます。</p>
+      <p><strong>文に合う漢字をえらぶ</strong>　上級だけ。文の意味に合う漢字をえらびます。</p>
+      <p>言葉の下に意味のヒントがあります。答えると、漢字が出ます。</p>
+    </div>
+  </section>
+
+  <section id="s-quiz" class="wrap" hidden>
+    <div class="topbar">
+      <button id="back" class="ghost" type="button">← もどる</button>
+      <div class="count" id="count"></div>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
+    <div class="card" id="qcard" tabindex="-1">
+      <span class="chip" id="chip"></span>
+      <p class="instr" id="instr"></p>
+      <div id="stim"></div>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div id="fb" aria-live="polite"></div>
+  </section>
+
+  <section id="s-result" class="wrap" hidden>
+    <div class="result">
+      <h2>けっか</h2>
+      <div class="scorebox"><span class="big" id="rs"></span><span id="rt"></span></div>
+      <p class="rmsg" id="rmsg"></p>
+      <div class="miss" id="rmiss"></div>
+    </div>
+    <div class="actions">
+      <button id="again" class="primary" type="button">もういちど</button>
+      <button id="menu" class="secondary" type="button">レベルをえらぶ</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  // Each option is [kanji word, reading, meaning hint]. Context questions use [kanji word, reading].
+  var S = function (key, rd) { return { t: 'same', key: key, rd: rd, o: [].slice.call(arguments, 2) }; };
+  var D = function (rd) { return { t: 'diff', rd: rd, o: [].slice.call(arguments, 1) }; };
+  var C = function (s, note) { return { t: 'ctx', s: s, note: note, o: [].slice.call(arguments, 2) }; };
+  // The first option in every question is the correct answer. Options are shuffled when shown.
+  var LEVELS = [
+    { id: 'easy', name: '初級', stars: '★', desc: '毎日よく見る、やさしい漢字', pool: [
+      S('校','こう',['校長','こうちょう','生徒を見守る、いちばん偉い先生'],['公園','こうえん','ブランコや花がある遊び場'],['高原','こうげん','涼しい山の上の野原'],['工場','こうじょう','機械で品物を作る建物']),
+      S('火','か',['火事','かじ','家が燃えるさわぎ'],['家族','かぞく','同じ家でくらす人たち'],['歌手','かしゅ','歌をうたう仕事の人'],['菓子','かし','おやつの甘い食べ物']),
+      S('天','てん',['天気','てんき','空のようす'],['店長','てんちょう','お店のいちばん上の人'],['点数','てんすう','テストの得点'],['転校','てんこう','別の学校へ移ること']),
+      S('長','ちょう',['長男','ちょうなん','いちばん上の息子'],['朝食','ちょうしょく','朝に食べるごはん'],['調子','ちょうし','ぐあい、ようす'],['町内','ちょうない','同じ町の中']),
+      S('海','かい',['海岸','かいがん','波がうちよせる砂浜'],['会社','かいしゃ','仕事をする勤め先'],['回数','かいすう','何度やったかの数'],['階段','かいだん','上り下りする段々']),
+      S('早','そう',['早朝','そうちょう','夜が明けたばかりの時間'],['走者','そうしゃ','走る人'],['相談','そうだん','人に聞いてもらう話し合い'],['草原','そうげん','草が広がる野原']),
+      D('かん',['管理','かんり','取りしきってまとめる'],['感動','かんどう','心がゆさぶられる'],['感謝','かんしゃ','ありがたいと思う'],['感想','かんそう','読んだ後に思ったこと']),
+      D('こう',['公園','こうえん','ブランコや花がある遊び場'],['工場','こうじょう','機械で品物を作る建物'],['工事','こうじ','道や建物を作る仕事'],['工作','こうさく','紙や木で物を作る']),
+      D('しょう',['商店','しょうてん','品物を売るお店'],['小説','しょうせつ','作り話の読み物'],['小学','しょうがく','六年間かよう学校'],['小数','しょうすう','0.5のような数']),
+      D('き',['汽車','きしゃ','煙を出す昔の列車'],['気分','きぶん','そのときの心もち'],['気持ち','きもち','心の中の感じ'],['気温','きおん','暑さ寒さの度合い']),
+      D('たい',['大会','たいかい','大勢が集まる試合'],['体力','たいりょく','からだを動かす力'],['体育','たいいく','運動をする授業'],['体重','たいじゅう','からだのおもさ']),
+      D('しん',['親切','しんせつ','人にやさしくする'],['新聞','しんぶん','毎日とどくニュースの紙'],['新年','しんねん','お正月のころ'],['新品','しんぴん','まだ使っていない物'])
+    ]},
+    { id: 'mid', name: '中級', stars: '★★', desc: 'ニュースや手紙で見かける漢字', pool: [
+      S('責','せき',['責任','せきにん','引き受けるべきつとめ'],['石油','せきゆ','ガソリンのもとになる油'],['席順','せきじゅん','すわる場所の順番'],['積雪','せきせつ','つもった雪']),
+      S('効','こう',['効果','こうか','ききめ'],['好調','こうちょう','ぐあいがとてもよい'],['幸運','こううん','ついていること'],['航海','こうかい','船で海をわたる']),
+      S('復','ふく',['復習','ふくしゅう','もう一度ならいなおす'],['福祉','ふくし','くらしを支える社会の仕組み'],['腹痛','ふくつう','おなかがいたい'],['複雑','ふくざつ','こみいっている']),
+      S('紀','き',['紀元','きげん','年を数えはじめる年'],['危険','きけん','あぶないこと'],['季節','きせつ','春夏秋冬のそれぞれ'],['規則','きそく','守るべき決まり']),
+      S('証','しょう',['証明','しょうめい','正しいとはっきり示す'],['商売','しょうばい','物を売り買いする'],['将来','しょうらい','これから先のこと'],['勝負','しょうぶ','勝ち負けを決める']),
+      S('採','さい',['採用','さいよう','人を選んで仲間に入れる'],['祭日','さいじつ','お祝いの休みの日'],['最高','さいこう','いちばん上'],['才能','さいのう','生まれつきの力']),
+      D('かい',['回答','かいとう','アンケートに返事をする'],['開店','かいてん','お店をひらく'],['開始','かいし','はじめること'],['開通','かいつう','道や線路がつながる']),
+      D('せい',['精神','せいしん','こころの働き'],['成長','せいちょう','大きく育つ'],['成果','せいか','努力のみのり'],['成功','せいこう','うまくいく']),
+      D('かん',['完全','かんぜん','欠けた所がない'],['観光','かんこう','名所をまわる旅'],['観察','かんさつ','よく見て調べる'],['観客','かんきゃく','見物にきた人たち']),
+      D('こう',['公開','こうかい','だれでも見られるようにする'],['航空','こうくう','ひこうきで空をとぶこと'],['航行','こうこう','船や飛行機が進む'],['航路','こうろ','船や飛行機の道すじ']),
+      D('き',['期間','きかん','はじめから終わりまで'],['機能','きのう','はたらき'],['機嫌','きげん','気分のよしあし'],['機会','きかい','ちょうどよいチャンス']),
+      D('しょう',['賞状','しょうじょう','ほめて渡す紙'],['障害','しょうがい','さまたげになるもの'],['障子','しょうじ','和室の白い紙の戸'],['障壁','しょうへき','へだてるかべ'])
+    ]},
+    { id: 'hard', name: '上級', stars: '★★★', desc: '書くのが難しい漢字と、文に合う漢字', pool: [
+      S('抑','よく',['抑制','よくせい','おさえて止める'],['欲望','よくぼう','ほしいと思う心'],['翌日','よくじつ','次の日'],['浴室','よくしつ','おふろの部屋']),
+      S('慎','しん',['慎重','しんちょう','注意深く軽はずみでない'],['信頼','しんらい','たよりにする'],['診察','しんさつ','医者が体を調べる'],['浸透','しんとう','じわじわしみこむ']),
+      S('概','がい',['概念','がいねん','物事の大まかな考え'],['害虫','がいちゅう','作物を荒らす虫'],['外出','がいしゅつ','家から出かける'],['街頭','がいとう','道ばた']),
+      S('尽','じん',['尽力','じんりょく','力をつくす'],['迅速','じんそく','とても素早い'],['陣地','じんち','軍が構える場所'],['甚大','じんだい','ひどく大きい']),
+      D('かん',['歓迎','かんげい','喜んで迎える'],['勧誘','かんゆう','さそって仲間に入れる'],['勧告','かんこく','やめるよう強くすすめる'],['勧奨','かんしょう','すすめて行わせる']),
+      D('しょう',['償却','しょうきゃく','借金などを返していく'],['衝動','しょうどう','ふと起きる強い思い'],['衝突','しょうとつ','ぶつかる'],['衝撃','しょうげき','強いショック']),
+      D('ほう',['抱負','ほうふ','心にいだく望み'],['豊作','ほうさく','作物がたくさんとれる'],['豊年','ほうねん','実りの多い年'],['豊漁','ほうりょう','魚がたくさんとれる']),
+      C('有名な作家の{こうえん}を聞きに行く。','講演は、大勢の人の前で話をすることです。',['講演','こうえん'],['公園','こうえん'],['公演','こうえん'],['後援','こうえん']),
+      C('法律が来月から{しこう}される。','施行は、法律などを実際に行うことです。',['施行','しこう'],['思考','しこう'],['試行','しこう'],['嗜好','しこう']),
+      C('具合の悪い人を{かいほう}する。','介抱は、病気やけがの人の世話をすることです。',['介抱','かいほう'],['開放','かいほう'],['解放','かいほう'],['快方','かいほう'])
+    ]}
+  ];
+  var PER = 8;
+  var CHIPS = { same: '同じ漢字をさがす', diff: 'ちがう漢字をさがす', ctx: '文に合う漢字をえらぶ' };
+  var $ = function (s) { return document.querySelector(s); };
+  var st = null;
+
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function getBest(id) { try { return localStorage.getItem('kj-' + id); } catch (e) { return null; } }
+  function setBest(id, v) { try { localStorage.setItem('kj-' + id, v); } catch (e) {} }
+  function show(id) {
+    ['s-start', 's-quiz', 's-result'].forEach(function (s) { $('#' + s).hidden = (s !== id); });
+    window.scrollTo(0, 0);
+  }
+
+  function renderLevels() {
+    $('#levels').innerHTML = LEVELS.map(function (l) {
+      var b = getBest(l.id);
+      return '<button class="level" type="button" data-id="' + l.id + '">' +
+        '<span class="lv-head"><span class="lv-name">' + l.name + '</span><span class="lv-stars" aria-hidden="true">' + l.stars + '</span></span>' +
+        '<span class="lv-best">' + (b ? '前回 ' + b : '') + '</span>' +
+        '<span class="lv-desc">' + l.desc + '</span></button>';
+    }).join('');
+  }
+
+  function goStart() { renderLevels(); show('s-start'); }
+
+  function start(id) {
+    var lv = LEVELS.filter(function (l) { return l.id === id; })[0];
+    st = { lv: lv, qs: shuffle(lv.pool).slice(0, PER), i: 0, ok: 0, miss: [], answered: false, cur: null };
+    show('s-quiz');
+    showQ();
+  }
+
+  function kana(r, n) { return '<u>' + r.slice(0, n) + '</u>' + r.slice(n); }
+
+  function showQ() {
+    var q = st.qs[st.i];
+    st.answered = false;
+    var opts = shuffle(q.o.map(function (o, idx) { return { w: o[0], r: o[1], h: o[2] || '', ok: idx === 0 }; }));
+    st.cur = { q: q, opts: opts, right: q.o[0] };
+    $('#count').textContent = st.lv.name + '　第' + (st.i + 1) + '問 / ' + st.qs.length;
+    $('#barfill').style.width = (st.i / st.qs.length * 100) + '%';
+    $('#chip').textContent = CHIPS[q.t];
+    var instr, stim;
+    if (q.t === 'same') {
+      instr = '下線は「' + q.rd + '」と読みます。頭の中で漢字に直して、この漢字を使っている言葉を1つえらびましょう。';
+      stim = '<div class="stim"><span class="cell kbox"><b>' + q.key + '</b></span><div class="yomi"><small>下線の読み</small><span>' + q.rd + '</span></div></div>';
+    } else if (q.t === 'diff') {
+      instr = 'どれも下線は「' + q.rd + '」と読みます。頭の中で漢字に直して、1つだけちがう漢字になるものを、えらびましょう。';
+      stim = '<div class="stim"><div class="yomi"><small>下線の読み</small><span>' + q.rd + '</span></div></div>';
+    } else {
+      instr = '【　】に入る言葉をえらびましょう。読みは、どれも同じです。';
+      stim = '<p class="sentence">' + q.s.replace(/\{(.+?)\}/, '<span class="blank">$1</span>') + '</p>';
+    }
+    $('#instr').textContent = instr;
+    $('#stim').innerHTML = stim;
+    var o = $('#opts');
+    o.className = 'opts';
+    o.innerHTML = opts.map(function (x, i) {
+      var inner;
+      if (q.t === 'ctx') {
+        inner = '<span class="w">' + x.w + '</span>';
+      } else {
+        inner = '<span class="w">' + kana(x.r, q.rd.length) + '</span>' +
+          '<span class="h">' + x.h + '</span>' +
+          '<span class="k"><b>' + x.w.charAt(0) + '</b>' + x.w.slice(1) + '</span>';
+      }
+      return '<button class="opt" type="button" data-i="' + i + '">' + inner + '<span class="mark" aria-hidden="true"></span></button>';
+    }).join('');
+    $('#fb').innerHTML = '';
+    var card = $('#qcard');
+    window.scrollTo(0, 0);
+    try { card.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function why(q, picked, right) {
+    var head = picked.ok ? '' : '正解は「' + right[0] + '」（' + right[1] + '）です。';
+    var detail;
+    if (q.t === 'same') {
+      detail = 'ほかの言葉は、' + q.o.slice(1).map(function (o) { return o[0] + 'は「' + o[0].charAt(0) + '」'; }).join('、') + 'の字です。';
+    } else if (q.t === 'diff') {
+      detail = '「' + q.o[1][0].charAt(0) + '」を使う言葉が3つ。「' + right[0] + '」だけ「' + right[0].charAt(0) + '」の字です。';
+    } else {
+      detail = (picked.ok ? '正解は「' + right[0] + '」。' : '') + q.note;
+    }
+    return head + detail;
+  }
+
+  function answer(i) {
+    if (st.answered) return;
+    st.answered = true;
+    var c = st.cur, picked = c.opts[i], q = c.q;
+    var btns = document.querySelectorAll('#opts .opt');
+    c.opts.forEach(function (x, k) {
+      if (x.ok) btns[k].classList.add('good');
+      else if (k === i) btns[k].classList.add('bad');
+    });
+    $('#opts').classList.add('done');
+    if (picked.ok) st.ok++;
+    else st.miss.push({ q: q, right: c.right });
+    var last = st.i === st.qs.length - 1;
+    $('#barfill').style.width = ((st.i + 1) / st.qs.length * 100) + '%';
+    $('#fb').innerHTML = '<div class="fb ' + (picked.ok ? 'good' : 'bad') + '">' +
+      '<div class="verdict">' + (picked.ok ? '○ せいかい！' : '× おしい！') + '</div>' +
+      '<p class="why">' + why(q, picked, c.right) + '</p>' +
+      '<button id="next" class="primary" type="button">' + (last ? 'けっかを見る' : 'つぎの問題へ') + '</button></div>';
+    var fb = $('#fb');
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { fb.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch (e) {}
+  }
+
+  function next() {
+    if (st.i < st.qs.length - 1) { st.i++; showQ(); }
+    else finish();
+  }
+
+  function finish() {
+    var n = st.qs.length, ok = st.ok;
+    setBest(st.lv.id, ok + '/' + n);
+    $('#rs').textContent = ok;
+    $('#rt').textContent = '/ ' + n + '問　せいかい（' + st.lv.name + '）';
+    var r = ok / n;
+    $('#rmsg').textContent = r >= 0.9 ? 'すばらしい！ ほぼ満点です。' : r >= 0.6 ? 'よくできました！' : 'おしい！ もういちど挑戦してみましょう。';
+    var m = $('#rmiss');
+    if (!st.miss.length) {
+      m.innerHTML = '<h3>全問せいかいです。</h3>';
+    } else {
+      m.innerHTML = '<h3>ふくしゅう（まちがえた問題）</h3><ul>' + st.miss.map(function (x) {
+        var q = x.q, lab;
+        if (q.t === 'same') lab = '「' + q.key + '」を使う言葉';
+        else if (q.t === 'diff') lab = '「' + q.rd + '」ではじまり、漢字がちがう言葉';
+        else lab = q.s.replace(/\{.+?\}/, '【' + x.right[0] + '】');
+        return '<li><span class="lab">' + lab + '</span><span class="ans">' + x.right[0] + '<small>' + x.right[1] + '</small></span></li>';
+      }).join('') + '</ul>';
+    }
+    show('s-result');
+  }
+
+  var backArmed = false, backT = null;
+  function resetBack() { backArmed = false; clearTimeout(backT); $('#back').textContent = '← もどる'; }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('button');
+    if (!t) return;
+    if (t.classList.contains('level')) start(t.getAttribute('data-id'));
+    else if (t.classList.contains('opt')) answer(+t.getAttribute('data-i'));
+    else if (t.id === 'next') next();
+    else if (t.id === 'again') start(st.lv.id);
+    else if (t.id === 'menu') goStart();
+    else if (t.id === 'back') {
+      if (!backArmed) {
+        backArmed = true;
+        t.textContent = 'もう一度おすと やめます';
+        backT = setTimeout(resetBack, 3500);
+      } else { resetBack(); goStart(); }
+    }
+  });
+
+  goStart();
+})();
+</script>
+
+</body></html>
